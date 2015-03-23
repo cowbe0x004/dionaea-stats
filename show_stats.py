@@ -14,6 +14,7 @@ def printCol(cursor):
 #    for col in col_names:
 #        sys.stdout.write(col + " ")
 #    print
+#   print
     #col_names = list(map(lambda x: x[0], cursor.description))
     #print "%-10s %s" % (col_names[0], col_names[1])
 
