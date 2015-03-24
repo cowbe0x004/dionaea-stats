@@ -8,6 +8,7 @@ db_file = '/var/dionaea/logsql.sqlite'
 conn = sqlite3.connect(db_file)
 cursor = conn.cursor()
 
+# printing column names
 def printCol(cursor):
     col_names = [cn[0] for cn in cursor.description]
     print "%-10s %s" % (col_names[0], col_names[1])
