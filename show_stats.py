@@ -10,7 +10,9 @@ db_file = '/var/dionaea/logsql.sqlite'
 conn = sqlite3.connect(db_file)
 cursor = conn.cursor()
 
+# printing the data
 def printTable(cursor):
+    # get column names from description
     col_names = [cn[0] for cn in cursor.description]
     rows = cursor.fetchall()
     
@@ -19,6 +21,7 @@ def printTable(cursor):
 
     y = PrettyTable()
     y.padding_wdith = 1
+    # get all columns
     while x < colNum:
         y.add_column(col_names[x], [row[x] for row in rows])
         y.align[col_names[x]] = "c"
