@@ -73,8 +73,12 @@ def send_mail(send_from, send_to, ip, filename, server="localhost"):
 def getipaddr():
     return socket.gethostbyname(socket.gethostname())
 
+# connections per day in last 7 days
+# most attacks from remote hosts (last 2 days)
+# most attacked ports (last 2 days)
+
 # attacked ports
-sqlTitle = "Attacked ports"
+sqlTitle = "Most attacked ports"
 cursor.execute("""SELECT COUNT(local_port) AS hitcount, local_port AS port 
     FROM connections 
     WHERE connection_type = 'accept' 
@@ -87,7 +91,7 @@ printTable(cursor, sqlTitle)
 # latest attackers
 sqlTitle = "Latest Attackers"
 cursor.execute("""
-    SELECT connection_protocol, datetime(connection_timestamp, 'unixepoch') as time, local_port, remote_host
+    SELECT connection_protocol, datetime(connection_timestamp, 'unixepoch', 'localtime') as time, local_port, remote_host
     FROM connections
     WHERE connection_type = 'accept'
     GROUP BY ROUND((connection_timestamp%(3600*24))/3600)
@@ -147,4 +151,4 @@ send_to = 'honeypot@liquidweb.com'
 ip = getipaddr()
 filename = 'export.txt'
 
-#send_mail(send_from, send_to, ip, filename)
+send_mail(send_from, send_to, ip, filename)
