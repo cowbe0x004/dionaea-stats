@@ -4,6 +4,11 @@
 from prettytable import PrettyTable
 import sqlite3
 import sys
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
+from email.Utils import COMMASPACE, formatdate
+import smtplib
+import socket
 
 # opening sqlite db and cursor
 db_file = '/var/dionaea/logsql.sqlite'
@@ -11,13 +16,14 @@ conn = sqlite3.connect(db_file)
 cursor = conn.cursor()
 
 # saving output to file
-output = open('export.txt', 'w')
-# empty content from previous run
-output.truncate()
+with open('export.txt', 'w') as output:
+    # empty content from previous run
+    output.truncate()
 
 # printing the data
 def printTable(cursor, sqlTitle):
     # get column names from description
+#    col_names = list(map(lambda x: x[0], cursor.description))
     col_names = [cn[0] for cn in cursor.description]
     rows = cursor.fetchall()
     
@@ -25,36 +31,47 @@ def printTable(cursor, sqlTitle):
     x = 0
 
     y = PrettyTable()
-    y.padding_wdith = 1
     # get all columns
     while x < colNum:
+        y.padding_width = 1
         y.add_column(col_names[x], [row[x] for row in rows])
-        y.align[col_names[x]] = "c"
+        y.align[col_names[0]] = "c"
         x = x + 1
-    
-#    y.align[col_names[1]] = "r"
+
     print sqlTitle
     print(y)
     print
+    # output as html
+#    outputData = y.get_html_string()
     outputData = y.get_string()
 
     # saving output to file
-    output = open('export.txt', 'a')
-    output.write(sqlTitle + "\n")
-    output.write(outputData + "\n\n")
-    output.close()
+    with open("export.txt", "a") as output:
+        output.write(sqlTitle + "\n")
+        output.write(outputData + "\n\n\n")
+        output.close()
 
-# printing column names
-#def printCol(cursor):
-#    col_names = [cn[0] for cn in cursor.description]
-#    print "%-10s %s" % (col_names[0], col_names[1])
-#    #col_names = list(map(lambda x: x[0], cursor.description))
-#    #print "%-10s %s" % (col_names[0], col_names[1])
-#
-#def printRows(cursor):
-#    rows = cursor.fetchall()
-#    for col in rows:
-#        print '%-10d %s' % (col[0], col[1])
+# sending data to email
+def send_mail(send_from, send_to, ip, filename, server="localhost"):
+    msg = MIMEMultipart('alternative')
+    msg['From'] = send_from
+    msg['To'] = send_to
+    msg['Date'] = formatdate(localtime=True)
+    msg['Subject'] = "Reports for Dionaea on %s" % ip
+
+    # attaching html file
+#    part = MIMEText(file(filename).read(), 'html')
+#    msg.attach(part)
+
+    # if only attaching text file
+    msg.attach(MIMEText(file(filename).read()))
+
+    mailer = smtplib.SMTP(server)
+    mailer.sendmail(send_from, send_to, msg.as_string())
+    mailer.close()
+
+def getipaddr():
+    return socket.gethostbyname(socket.gethostname())
 
 # attacked ports
 sqlTitle = "Attacked ports"
@@ -123,3 +140,11 @@ printTable(cursor, sqlTitle)
 
 output.close()
 conn.close()
+
+# sending and variables for mail function
+send_from = 'root@nospaceindent.com'
+send_to = 'honeypot@liquidweb.com'
+ip = getipaddr()
+filename = 'export.txt'
+
+#send_mail(send_from, send_to, ip, filename)
