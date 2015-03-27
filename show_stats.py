@@ -127,7 +127,7 @@ cursor.execute("""
     FROM connections 
     WHERE connection_type = 'accept' 
     GROUP BY strftime('%Y-%m-%d', connection_timestamp,'unixepoch') 
-    ORDER BY strftime('%d', connection_timestamp,'unixepoch') DESC 
+    ORDER BY strftime('%Y-%m-%d', connection_timestamp,'unixepoch') DESC 
     LIMIT 2;
     """)
 printTable(cursor, sqlTitle)
@@ -161,6 +161,7 @@ cursor.execute("""
     FROM downloads 
     GROUP BY download_md5_hash 
     ORDER BY COUNT(download_md5_hash) DESC
+    LIMIT 20
     """)
 printTable(cursor, sqlTitle)
 
@@ -172,6 +173,7 @@ cursor.execute("""
     FROM downloads
     GROUP BY download_url
     ORDER BY COUNT(*) DESC
+    LIMIT 20
     """)
 printTable(cursor, sqlTitle)
 
