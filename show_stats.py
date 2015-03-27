@@ -6,6 +6,8 @@ import sqlite3
 import sys
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
+from email.MIMEBase import MIMEBase
+from email import Encoders
 from email.Utils import COMMASPACE, formatdate
 import smtplib
 import socket
@@ -74,12 +76,29 @@ def getipaddr():
     return socket.gethostbyname(socket.gethostname())
 
 # connections per day in last 7 days
-# most attacks from remote hosts (last 2 days)
-# most attacked ports (last 2 days)
+sqlTitle = "Connections per day in last 7 days"
+cursor.execute("""
+    SELECT strftime('%Y-%m-%d', connection_timestamp,'unixepoch') as 'Day', count(strftime('%m', connection_timestamp,'unixepoch')) as 'hits' 
+    FROM connections 
+    GROUP BY strftime('%Y', connection_timestamp,'unixepoch'), strftime('%m', connection_timestamp,'unixepoch'), strftime('%d', connection_timestamp,'unixepoch') 
+    ORDER BY strftime('%Y', connection_timestamp,'unixepoch') DESC, strftime('%m', connection_timestamp,'unixepoch') DESC, strftime('%d', connection_timestamp,'unixepoch') DESC LIMIT 7
+    """)
+printTable(cursor, sqlTitle)
 
-# attacked ports
-sqlTitle = "Most attacked ports"
-cursor.execute("""SELECT COUNT(local_port) AS hitcount, local_port AS port 
+# most attacked ports (last 2 days)
+sqlTitle = 'Most attacked port (last 2 days)'
+cursor.execute("""
+    SELECT strftime('%Y-%m-%d', connection_timestamp,'unixepoch') AS 'day', COUNT(local_port) AS hits, local_port AS port 
+    FROM connections 
+    WHERE connection_type = 'accept' 
+    GROUP BY strftime('%Y', connection_timestamp,'unixepoch'), strftime('%m', connection_timestamp,'unixepoch'), strftime('%d', connection_timestamp,'unixepoch') 
+    ORDER BY strftime('%Y', connection_timestamp,'unixepoch') DESC, strftime('%m', connection_timestamp,'unixepoch') DESC, strftime('%d', connection_timestamp,'unixepoch') DESC LIMIT 2;
+    """)
+printTable(cursor, sqlTitle)
+
+# attacked ports (all time)
+sqlTitle = "Most attacked ports (all time)"
+cursor.execute("""SELECT COUNT(local_port) AS hits, local_port AS port 
     FROM connections 
     WHERE connection_type = 'accept' 
     GROUP BY local_port
@@ -100,6 +119,31 @@ cursor.execute("""
     """)
 printTable(cursor, sqlTitle)
 
+# top attack counts from remote host (last 2 days)
+sqlTitle = "Top attacks from remote hosts (last 2 days)"
+#    ORDER BY strftime('%Y', connection_timestamp,'unixepoch') DESC, strftime('%m', connection_timestamp,'unixepoch') DESC, strftime('%d', connection_timestamp,'unixepoch') DESC limit 2 
+cursor.execute("""
+    SELECT strftime('%Y-%m-%d', connection_timestamp,'unixepoch') AS day, COUNT(remote_host) AS hits, remote_host AS IP
+    FROM connections 
+    WHERE connection_type = 'accept' 
+    GROUP BY strftime('%Y-%m-%d', connection_timestamp,'unixepoch') 
+    ORDER BY strftime('%d', connection_timestamp,'unixepoch') DESC 
+    LIMIT 2;
+    """)
+printTable(cursor, sqlTitle)
+
+# top attack counts from remote hosts (all time)
+sqlTitle = "Top attacks from remote hosts (all time)"
+cursor.execute("""
+    SELECT COUNT(remote_host) AS hits, remote_host AS IP
+    FROM connections
+    WHERE connection_type = 'accept'
+    GROUP BY strftime('%Y-%m-%d', connection_timestamp,'unixepoch')
+    ORDER BY count(remote_host) DESC
+    LIMIT 10
+    """)
+printTable(cursor, sqlTitle)
+
 # attacks over a day
 sqlTitle = "Attacks over a day"
 cursor.execute("""
@@ -113,24 +157,13 @@ printTable(cursor, sqlTitle)
 # popular malware downloads
 sqlTitle = "Popular malware downloads"
 cursor.execute("""
-    SELECT COUNT(download_md5_hash), download_md5_hash 
+    SELECT COUNT(download_md5_hash) AS hits, download_md5_hash AS hash
     FROM downloads 
     GROUP BY download_md5_hash 
     ORDER BY COUNT(download_md5_hash) DESC
     """)
 printTable(cursor, sqlTitle)
 
-# most attacks from remote hosts
-sqlTitle = "Most attacks from remote hosts"
-cursor.execute("""
-    SELECT COUNT(remote_host), remote_host
-    FROM connections
-    WHERE connection_type = 'accept'
-    GROUP BY remote_host
-    ORDER BY count(remote_host) DESC
-    LIMIT 10
-    """)
-printTable(cursor, sqlTitle)
 
 # popular download locations
 sqlTitle = "Popular download locations"
