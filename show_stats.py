@@ -1,5 +1,9 @@
 #!/usr/bin/python
+# Required modules
 # easy_install prettytable
+# sendmail package
+# Author: ahuang@liquidweb.com
+# Last update: 2015-03-27
 
 from prettytable import PrettyTable
 import sqlite3
