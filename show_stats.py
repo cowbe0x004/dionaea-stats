@@ -3,7 +3,7 @@
 # easy_install prettytable
 # sendmail package
 # Author: ahuang@liquidweb.com
-# Last update: 2015-03-27
+# Last update: 2015-03-30
 
 from prettytable import PrettyTable
 import sqlite3
@@ -54,8 +54,7 @@ def printTable(cursor, sqlTitle):
     # saving output to file
     with open("export.txt", "a") as output:
         output.write(sqlTitle + "\n")
-        output.write(outputData + "\n\n\n")
-        output.close()
+        output.write(outputData + "\n\n")
 
 # sending data to email
 def send_mail(send_from, send_to, ip, filename, server="localhost"):
@@ -88,8 +87,7 @@ def find_creation_date(cursor):
     
     with open("export.txt", "a") as output:
         for row in rows:
-            output.write("First attack on " + row[0] + "\n\n")
-            output.close()
+            output.write("Data collected since " + row[0] + "\n\n")
 
 find_creation_date(cursor)
 
