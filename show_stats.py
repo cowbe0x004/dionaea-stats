@@ -86,8 +86,10 @@ def find_creation_date(cursor):
     cursor.execute(sql)
     rows = cursor.fetchall()
     
-    for row in rows:
-        print "First attack on " + row[0] + "\n"
+    with open("export.txt", "a") as output:
+        for row in rows:
+            output.write("First attack on " + row[0] + "\n\n")
+            output.close()
 
 find_creation_date(cursor)
 
