@@ -76,16 +76,58 @@ def send_mail(send_from, send_to, ip, filename, server="localhost"):
     mailer.sendmail(send_from, send_to, msg.as_string())
     mailer.close()
 
+# getting ip of the server
 def getipaddr():
     return socket.gethostbyname(socket.gethostname())
 
-# connections per day in last 7 days
-sqlTitle = "Connections per day in last 7 days"
+# after database is rotated, find date
+def find_creation_date(cursor):
+    sql = "SELECT datetime(connection_timestamp, 'unixepoch', 'localtime') FROM connections LIMIT 1"
+    cursor.execute(sql)
+    rows = cursor.fetchall()
+    
+    for row in rows:
+        print "First attack on " + row[0] + "\n"
+
+find_creation_date(cursor)
+
+# latest attackers
+sqlTitle = "Latest Attackers"
 cursor.execute("""
-    SELECT strftime('%Y-%m-%d', connection_timestamp,'unixepoch') as 'Day', count(strftime('%m', connection_timestamp,'unixepoch')) as 'hits' 
+    SELECT connection_protocol, datetime(connection_timestamp, 'unixepoch', 'localtime') as time, local_port, remote_host
+    FROM connections
+    WHERE connection_type = 'accept'
+    GROUP BY ROUND((connection_timestamp%(3600*24))/3600)
+    ORDER BY time DESC
+    LIMIT 5
+    """)
+printTable(cursor, sqlTitle)
+
+# Today top attackers
+sqlTitle = "Today's top attackers"
+
+# top attack counts from remote host (last 2 days)
+sqlTitle = "Top attacks from remote hosts (last 2 days)"
+#    ORDER BY strftime('%Y', connection_timestamp,'unixepoch') DESC, strftime('%m', connection_timestamp,'unixepoch') DESC, strftime('%d', connection_timestamp,'unixepoch') DESC limit 2 
+cursor.execute("""
+    SELECT strftime('%Y-%m-%d', connection_timestamp,'unixepoch') AS day, COUNT(remote_host) AS hits, remote_host AS IP
     FROM connections 
-    GROUP BY strftime('%Y', connection_timestamp,'unixepoch'), strftime('%m', connection_timestamp,'unixepoch'), strftime('%d', connection_timestamp,'unixepoch') 
-    ORDER BY strftime('%Y', connection_timestamp,'unixepoch') DESC, strftime('%m', connection_timestamp,'unixepoch') DESC, strftime('%d', connection_timestamp,'unixepoch') DESC LIMIT 7
+    WHERE connection_type = 'accept' 
+    GROUP BY strftime('%Y-%m-%d', connection_timestamp,'unixepoch') 
+    ORDER BY strftime('%Y-%m-%d', connection_timestamp,'unixepoch') DESC 
+    LIMIT 3;
+    """)
+printTable(cursor, sqlTitle)
+
+# top attack counts from remote hosts (all time)
+sqlTitle = "Top attacks from remote hosts (all time)"
+cursor.execute("""
+    SELECT COUNT(remote_host) AS hits, remote_host AS IP
+    FROM connections
+    WHERE connection_type = 'accept'
+    GROUP BY strftime('%Y-%m-%d', connection_timestamp,'unixepoch')
+    ORDER BY count(remote_host) DESC
+    LIMIT 10
     """)
 printTable(cursor, sqlTitle)
 
@@ -96,7 +138,8 @@ cursor.execute("""
     FROM connections 
     WHERE connection_type = 'accept' 
     GROUP BY strftime('%Y', connection_timestamp,'unixepoch'), strftime('%m', connection_timestamp,'unixepoch'), strftime('%d', connection_timestamp,'unixepoch') 
-    ORDER BY strftime('%Y', connection_timestamp,'unixepoch') DESC, strftime('%m', connection_timestamp,'unixepoch') DESC, strftime('%d', connection_timestamp,'unixepoch') DESC LIMIT 2;
+    ORDER BY strftime('%Y', connection_timestamp,'unixepoch') DESC, strftime('%m', connection_timestamp,'unixepoch') DESC, strftime('%d', connection_timestamp,'unixepoch') DESC 
+    LIMIT 3;
     """)
 printTable(cursor, sqlTitle)
 
@@ -111,40 +154,13 @@ cursor.execute("""SELECT COUNT(local_port) AS hits, local_port AS port
     """)
 printTable(cursor, sqlTitle)
 
-# latest attackers
-sqlTitle = "Latest Attackers"
+# connections per day in last 7 days
+sqlTitle = "Connections per day in last 7 days"
 cursor.execute("""
-    SELECT connection_protocol, datetime(connection_timestamp, 'unixepoch', 'localtime') as time, local_port, remote_host
-    FROM connections
-    WHERE connection_type = 'accept'
-    GROUP BY ROUND((connection_timestamp%(3600*24))/3600)
-    ORDER BY time DESC
-    LIMIT 5
-    """)
-printTable(cursor, sqlTitle)
-
-# top attack counts from remote host (last 2 days)
-sqlTitle = "Top attacks from remote hosts (last 2 days)"
-#    ORDER BY strftime('%Y', connection_timestamp,'unixepoch') DESC, strftime('%m', connection_timestamp,'unixepoch') DESC, strftime('%d', connection_timestamp,'unixepoch') DESC limit 2 
-cursor.execute("""
-    SELECT strftime('%Y-%m-%d', connection_timestamp,'unixepoch') AS day, COUNT(remote_host) AS hits, remote_host AS IP
+    SELECT strftime('%Y-%m-%d', connection_timestamp,'unixepoch') as 'Day', count(strftime('%m', connection_timestamp,'unixepoch')) as 'hits' 
     FROM connections 
-    WHERE connection_type = 'accept' 
-    GROUP BY strftime('%Y-%m-%d', connection_timestamp,'unixepoch') 
-    ORDER BY strftime('%Y-%m-%d', connection_timestamp,'unixepoch') DESC 
-    LIMIT 2;
-    """)
-printTable(cursor, sqlTitle)
-
-# top attack counts from remote hosts (all time)
-sqlTitle = "Top attacks from remote hosts (all time)"
-cursor.execute("""
-    SELECT COUNT(remote_host) AS hits, remote_host AS IP
-    FROM connections
-    WHERE connection_type = 'accept'
-    GROUP BY strftime('%Y-%m-%d', connection_timestamp,'unixepoch')
-    ORDER BY count(remote_host) DESC
-    LIMIT 10
+    GROUP BY strftime('%Y', connection_timestamp,'unixepoch'), strftime('%m', connection_timestamp,'unixepoch'), strftime('%d', connection_timestamp,'unixepoch') 
+    ORDER BY strftime('%Y', connection_timestamp,'unixepoch') DESC, strftime('%m', connection_timestamp,'unixepoch') DESC, strftime('%d', connection_timestamp,'unixepoch') DESC LIMIT 7
     """)
 printTable(cursor, sqlTitle)
 
