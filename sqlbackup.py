@@ -64,7 +64,7 @@ def clean_data(backup_dir):
 # restarting dionaea to create db file automatically
 def restart_dionaea(init_file):
     # restart dionea
-    subprocess.call("/etc/init.d/dionaea restart", shell=True)
+    subprocess.call(init_file + " restart", shell=True)
 
 if __name__ == "__main__":
     backup_db(db_file, backup_dir )
